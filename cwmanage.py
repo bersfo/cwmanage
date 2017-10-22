@@ -26,7 +26,7 @@ class api(object):
         self.cwUrl = "https://" + cwHost + "/v4_6_release/apis/3.0/"
         self.cwHeaders = {"Authorization": "Basic " + cwToken, "Content-Type": "application/json"}
         #TODO: Read system's timezone and determine time difference (in minutes) to UTC automatically
-        self.cwTzUTCdiff = 480 #Pacific Time
+        self.cwTzUTCdiff = 420 #Pacific Time
 
     # Get a list of the first 1000 companies and return as JSON.
     def get_companies(self):
@@ -65,7 +65,14 @@ class api(object):
         except:
             print(r.text)
             raise
-        return r.json()
+        # Fix the UTC difference
+        schedule = r.json()
+        for entry in schedule:
+            datestartutc = arrow.get(entry['dateStart']).datetime - timedelta(minutes=self.cwTzUTCdiff)
+            dateendutc = arrow.get(entry['dateEnd']).datetime - timedelta(minutes=self.cwTzUTCdiff)
+            entry['dateStart'] = '[' + datestartutc.strftime("%Y-%m-%dT%H:%M:%SZ") + ']'
+            entry['dateEnd'] = '[' + dateendutc.strftime("%Y-%m-%dT%H:%M:%SZ") + ']'
+        return schedule
 
     # Get all time entries for member between dateStart and dateEnd and return as JSON.
     # member is the CW user name
@@ -84,4 +91,11 @@ class api(object):
         except:
             print(r.text)
             raise
-        return r.json()
+        # Fix the UTC difference
+        times = r.json()
+        for entry in times:
+            datestartutc = arrow.get(entry['dateStart']).datetime - timedelta(minutes=self.cwTzUTCdiff)
+            dateendutc = arrow.get(entry['dateEnd']).datetime - timedelta(minutes=self.cwTzUTCdiff)
+            entry['dateStart'] = '[' + datestartutc.strftime("%Y-%m-%dT%H:%M:%SZ") + ']'
+            entry['dateEnd'] = '[' + dateendutc.strftime("%Y-%m-%dT%H:%M:%SZ") + ']'
+        return times
